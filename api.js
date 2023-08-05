@@ -1,89 +1,43 @@
 const express=require("express");
 const app=express();
+require("dotenv").config();
 const mongoose = require("mongoose");
 const Product = require("./models/productModel");
+const productRoute = require("./routes/productRoute");
+const errorMiddleware =  require("./middleware/errorMiddleware");
+const cors = require("cors");
+
+const MONGO_URL= process.env.MONGO_URL;
+const PORT = process.env.PORT || 3000;
+const FRONTEND = process.env.FRONTEND;
+
+const corsOptions = {
+    origin: FRONTEND ,
+    optionsSuccessStatus : 200  //some legacy browsers (IE11, various smarttvs) choke on 204
+};
 
 app.use(express.json());
 app.use(express.urlencoded({extended: false}));
+app.use("/products",productRoute);
+app.use(cors(corsOptions));
+
+
 
 app.get("/", (req, res)=>{
-    res.send("getting the home");
+   res.send("getting the home");
 
 });
 
 
-app.post("/products", async(req,res)=>{
-    try{
-        const product = await Product.create(req.body);
-        res.status(200).json(product);
-
-    }catch(error){
-        console.log(error);
-        res.send(500).json({message: error.message});
-    }
-})
-
-app.get("/products", async(req, res)=>{
-    try {
-        const products= await Product.find({});
-        res.status(200).send(products);
-
-    } catch (error) {
-        console.log(error);
-        res.send(404).json({message: error.message})
-    }
-});
-
-app.get("/products/:id", async(req, res)=>{
-    try {
-        const product= await Product.findById(req.params.id);
-        res.status(200).send(product);
-    } catch (error) {
-        console.log(error);
-        res.send(500).json({message : error.message});
-    }
-})
-
-app.put("/products/:id", async(req, res)=>{
-    try {
-        const product = await Product.findByIdAndUpdate(req.params.id, req.body);
-        if(!product){
-            return res.send(404).send("not found")
-        }
-        const updatedProduct=await Product.findById(req.params.id)
-        return res.status(200).send(updatedProduct);
-        
-    } catch (error) {
-        console.log(error);
-        res.send(500).json({message : error.message});
-    }
-})
-
-app.delete("/products/:id", async(req, res)=>{
-    try {
-        const product = await Product.findByIdAndDelete(req.params.id);
-        if(!product){
-            return res.status(404).send("not found");
-        }
-
-        return res.status(200).send(product);
-
-    } catch (error) {
-        console.log(error);
-        res.status(500).send(error.message);
-    }
-
-
-})
-
+app.use(errorMiddleware);
 
 mongoose.set("strictQuery",false);
 
-mongoose.connect("mongodb+srv://sinemsahan:sinem1234@node.d09vdi0.mongodb.net/")
+mongoose.connect(MONGO_URL)
 .then(()=>{
     console.log("db connected");
-    app.listen(3000, ()=>{
-        console.log("listening on port 3000");
+    app.listen(PORT, ()=>{
+        console.log(`listening on port ${PORT}`);
     });
 }).catch((error)=>{
     console.log(error);
